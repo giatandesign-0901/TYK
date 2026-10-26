@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Áp cấu hình OmniRoute dùng chung cho mọi dự án: combo theo loại việc + 1 API key mỗi dự án.
+# Áp cấu hình OmniRoute dùng chung cho mọi dự án: combo AI miễn phí + 1 API key mỗi dự án.
 # Nội dung lấy từ cau-hinh.json. Chạy lại nhiều lần được: combo/key đã có thì bỏ qua.
 #
 # Dùng:  OMNIROUTE_PASSWORD=... ./cau-hinh.sh [đường-dẫn-cau-hinh.json]
@@ -38,25 +38,22 @@ jq -c '.combos[]' "$CONFIG" | while read -r combo; do
 done
 
 echo "→ Tạo API key"
-existing_keys="$(api GET /api/keys | jq -r '.keys[].name')"
+existing_keys="$(api GET /api/keys | jq -c '.keys[] | {name, id}')"
 jq -c '.keys[]' "$CONFIG" | while read -r k; do
   name="$(jq -r .name <<<"$k")"
-  if grep -qx "$name" <<<"$existing_keys"; then
-    echo "  = $name (đã có — không in lại key)"
-    continue
+  id="$(jq -r --arg n "$name" 'select(.name == $n) | .id' <<<"$existing_keys" | head -1)"
+  if [[ -n "$id" ]]; then
+    msg="  = $name (đã có — không in lại key)"
+  else
+    created="$(api POST /api/keys "$(jq '{name}' <<<"$k")")"
+    id="$(jq -r '.id' <<<"$created")"
+    [[ "$id" != null ]] || { echo "  ✗ $name: $created"; exit 1; }
+    msg="  + $name  key=$(jq -r '.key' <<<"$created")"
   fi
-  created="$(api POST /api/keys "$(jq '{name}' <<<"$k")")"
-  id="$(jq -r '.id' <<<"$created")"
-  secret="$(jq -r '.key' <<<"$created")"
-  [[ "$id" != null ]] || { echo "  ✗ $name: $created"; exit 1; }
 
-  # Chỉ cho phép gọi các combo được chỉ định
+  # Luôn đồng bộ quyền theo cau-hinh.json (kể cả key cũ): chỉ được gọi các combo được chỉ định
   api PATCH "/api/keys/$id" "$(jq '{allowedCombos: .combos}' <<<"$k")" >/dev/null
-  # Ngân sách ngày/tháng, cảnh báo khi dùng 80%
-  api POST /api/usage/budget "$(jq --arg id "$id" \
-    '{apiKeyId:$id, dailyLimitUsd:.daily, monthlyLimitUsd:.monthly, warningThreshold:0.8}' <<<"$k")" >/dev/null
-
-  echo "  + $name  key=$secret"
+  echo "$msg"
 done
 
 echo "✓ Xong. Lưu các key vừa in vào nơi an toàn — sẽ không hiển thị lại."

@@ -1,42 +1,40 @@
-# OmniRoute – Cổng AI dùng chung cho mọi dự án
+# OmniRoute – AI miễn phí dự phòng khi Claude hết lượt
 
-Một máy chủ OmniRoute duy nhất phục vụ **tất cả dự án**. Mỗi dự án có 1 API key riêng, có định mức chi phí riêng, và gọi AI qua cùng 1 địa chỉ.
+Dùng chung cho **mọi dự án**. Không phát sinh chi phí: chỉ dùng hạn mức free chính thức của Google, Cerebras, Groq.
 
-```
-Dự án A ─┐ key "du-an-a"
-Dự án B ─┼──► OmniRoute ──► Claude (Opus / Sonnet / Haiku)
-Dự án C ─┘ key "du-an-c"     │
-                             └─ ghi chi phí theo từng key
-```
+## Nguyên tắc vận hành
 
-## Cấu hình (`cau-hinh.json`)
+| Tình huống | Dùng gì |
+|---|---|
+| Bình thường | Claude **trực tiếp** (claude.ai, app, Claude Code) — không qua OmniRoute |
+| Claude báo hết lượt | Chuyển sang OmniRoute, model = `mien-phi` |
+| Claude có lượt trở lại | Quay về Claude |
 
-### Combo theo loại việc (dùng chung cho mọi dự án)
+> ⚠️ **Không** nối tài khoản gói Claude Pro/Max vào OmniRoute — trái điều khoản Anthropic, có thể bị khóa tài khoản.
 
-| Combo | Dùng khi | Thứ tự model |
-|---|---|---|
-| `nhanh` | Định dạng, dịch, tóm tắt ngắn, nhiều lượt | `claude-haiku-5-5` → `claude-sonnet-5-5` |
-| `chinh-xac` | Phân tích, đối chiếu số liệu, lập kế hoạch, viết code | `claude-opus-5-5` → `claude-sonnet-5-5` |
+## Dữ liệu được / không được gửi qua `mien-phi`
 
-Combo dùng chế độ `priority`: luôn dùng model đầu, lỗi thì tự chuyển sang model sau.
+| ✅ Được gửi | ❌ Không gửi |
+|---|---|
+| Dịch, định dạng bảng, sửa câu chữ | BOM, bản vẽ, định mức của công ty |
+| Hỏi kiến thức chung, giải thích khái niệm | Giá, báo giá, hợp đồng, thông tin khách hàng |
+| Khung SOP / checklist mẫu không chứa số liệu thật | Dữ liệu nhân sự, tài chính |
+| Code không chứa mật khẩu / key | Mật khẩu, API key, tệp `.env` |
 
-### Key theo dự án
+Lý do: hạn mức free của các hãng có thể dùng dữ liệu gửi lên để cải thiện dịch vụ (ví dụ gói free Gemini API).
 
-| Key | Dùng cho | Ngày / Tháng (USD) |
-|---|---|---|
-| `chung` | Việc lặt vặt, thử nghiệm, chưa thuộc dự án nào | 5 / 50 |
-| `tyk` | Dự án TYK | 5 / 50 |
+## Combo `mien-phi`
 
-> ⚠️ Hạn mức là **giá trị mẫu** — sửa theo ngân sách thực tế. `0` = không giới hạn.
+Chế độ `priority`: dùng nguồn đầu, hết lượt/lỗi thì tự chuyển nguồn sau.
 
-## Thêm một dự án mới
+| # | Nguồn | Model | Hạn mức free (theo OmniRoute) |
+|---|---|---|---|
+| 1 | Google AI Studio | `gemini-2.5-flash` | 1.500 yêu cầu/ngày |
+| 2 | Cerebras | `gpt-oss-120b` | 1 triệu token/ngày |
+| 3 | Groq | `llama-3.3-70b-versatile` | 30 yêu cầu/phút, 14.400/ngày |
+| 4 | Groq | `openai/gpt-oss-120b` | (chung hạn mức Groq) |
 
-1. Thêm 1 dòng vào mảng `keys` trong `cau-hinh.json`:
-   ```json
-   { "name": "ten-du-an", "combos": ["nhanh", "chinh-xac"], "daily": 5, "monthly": 50 }
-   ```
-2. Chạy lại: `OMNIROUTE_PASSWORD=<mật-khẩu> ./cau-hinh.sh`
-3. Script chỉ tạo key mới (key cũ giữ nguyên) và in key **một lần** → lưu lại.
+Hạn mức do các hãng quy định và có thể thay đổi.
 
 ## Cài đặt lần đầu (1 lần duy nhất)
 
@@ -44,45 +42,45 @@ Combo dùng chế độ `priority`: luôn dùng model đầu, lỗi thì tự ch
 |---|---|
 | 1 | `npm install -g omniroute` |
 | 2 | Chép `.env.example` → `.env`, đổi `INITIAL_PASSWORD` |
-| 3 | `omniroute serve --no-open` (hoặc `omniroute autostart enable` để tự chạy khi khởi động máy) |
-| 4 | Dashboard `http://localhost:20128` → Providers → Anthropic → nhập API key Anthropic |
-| 5 | `OMNIROUTE_PASSWORD=<mật-khẩu> ./cau-hinh.sh` |
+| 3 | `omniroute serve --no-open` (hoặc `omniroute autostart enable` để tự chạy khi bật máy) |
+| 4 | Đăng ký **key free** (không cần thẻ): [aistudio.google.com](https://aistudio.google.com) · [cloud.cerebras.ai](https://cloud.cerebras.ai) · [console.groq.com](https://console.groq.com) |
+| 5 | Dashboard `http://localhost:20128` → Providers → nhập 3 key trên (Gemini, Cerebras, Groq) |
+| 6 | `OMNIROUTE_PASSWORD=<mật-khẩu> ./cau-hinh.sh` → lưu key dự án được in ra (chỉ in 1 lần) |
 
-## Dùng hằng ngày trong một dự án
+## Dùng khi Claude hết lượt
 
-| Công cụ | Cách trỏ về OmniRoute |
+| Công cụ | Cách làm |
 |---|---|
-| Claude Code | `omniroute launch --api-key <key-dự-án>` (mở Claude Code đi qua OmniRoute) |
-| Công cụ chuẩn OpenAI (script, Cursor, Codex, n8n…) | Base URL `http://localhost:20128/v1`, API key = key dự án, model = `nhanh` hoặc `chinh-xac` |
+| Công cụ chuẩn OpenAI (Cursor, Cline, Codex, script…) | Base URL `http://localhost:20128/v1`, API key = key dự án, model = `mien-phi` |
+| Hỏi nhanh từ dòng lệnh | `omniroute chat --model mien-phi "câu hỏi"` |
 | Gọi trực tiếp | Xem ví dụ dưới |
 
 ```bash
 curl http://localhost:20128/v1/chat/completions \
   -H "Authorization: Bearer <key-dự-án>" \
   -H "Content-Type: application/json" \
-  -d '{"model":"chinh-xac","messages":[{"role":"user","content":"..."}]}'
+  -d '{"model":"mien-phi","messages":[{"role":"user","content":"..."}]}'
 ```
 
-Mẹo: đặt key vào tệp `.env` của từng dự án (`OMNIROUTE_API_KEY=...`), không ghi thẳng vào code.
+## Thêm dự án mới
 
-## Theo dõi chi phí
+1. Thêm 1 dòng vào `keys` trong `cau-hinh.json`: `{ "name": "ten-du-an", "combos": ["mien-phi"] }`
+2. Chạy lại `./cau-hinh.sh` → chỉ tạo key mới; quyền của key cũ được đồng bộ theo tệp.
 
-- Dashboard → **Usage**: chi phí theo từng key, tức là theo từng dự án.
-- CLI: `omniroute cost` hoặc `omniroute usage`.
+Đổi danh sách model của combo đã tạo: sửa trong Dashboard → Combos (script không ghi đè combo đã có).
 
 ## Checklist bảo mật
 
-- [ ] `REQUIRE_API_KEY=true` — nếu `false`, yêu cầu **không có key** sẽ bỏ qua toàn bộ phân quyền và hạn mức.
+- [ ] `REQUIRE_API_KEY=true` — nếu `false`, yêu cầu không có key sẽ bỏ qua phân quyền.
 - [ ] Đổi `INITIAL_PASSWORD` mặc định.
 - [ ] Không commit `.env` hay key vào git.
-- [ ] Chỉ mở cổng 20128 trong mạng nội bộ.
+- [ ] Chỉ mở cổng 20128 trong máy / mạng nội bộ.
 
 ## Đã kiểm thử (OmniRoute v3.8.52, máy chủ cục bộ)
 
 | Kiểm tra | Kết quả |
 |---|---|
-| Tạo combo + key + gán quyền + hạn mức | ✅ |
-| Chạy lại script (không tạo trùng) | ✅ |
-| Thêm 1 dự án mới vào `cau-hinh.json` rồi chạy lại → chỉ tạo key mới | ✅ |
-| Key không được phép gọi combo → bị chặn | ✅ HTTP 403 |
-| Gọi model thật | ⏳ Cần nhập API key Anthropic (bước 4) |
+| Tạo combo `mien-phi` (4 nguồn, đúng nhà cung cấp) | ✅ |
+| Tạo key, chạy lại không tạo trùng, đồng bộ quyền key cũ | ✅ |
+| Key gọi combo không được phép → bị chặn | ✅ HTTP 403 |
+| Gọi model thật | ⏳ Cần nhập key free ở bước 5 |
