@@ -41,7 +41,7 @@ Lưu ý: nguồn ẩn danh **chậm và kém ổn định hơn** Claude, thườ
 
 | Bước | Việc làm |
 |---|---|
-| 1 | `npm install -g omniroute` |
+| 1 | `npm install -g omniroute@3.8.52` (bản đã kiểm thử) |
 | 2 | Chép `.env.example` → `.env`, đổi `INITIAL_PASSWORD` |
 | 3 | `omniroute serve --no-open` (hoặc `omniroute autostart enable` để tự chạy khi bật máy) |
 | 4 | `OMNIROUTE_PASSWORD=<mật-khẩu> ./cau-hinh.sh` → lưu key dự án được in ra (chỉ in 1 lần) |
