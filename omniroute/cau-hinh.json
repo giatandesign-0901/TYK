@@ -18,6 +18,7 @@
   "_ghi_chu_keys": "Mỗi dự án 1 key. Thêm dự án = thêm 1 dòng rồi chạy lại cau-hinh.sh.",
   "keys": [
     { "name": "chung", "combos": ["mien-phi"] },
-    { "name": "tyk",   "combos": ["mien-phi"] }
+    { "name": "tyk",   "combos": ["mien-phi"] },
+    { "name": "dien-thoai", "combos": ["mien-phi"] }
   ]
 }

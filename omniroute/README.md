@@ -9,14 +9,17 @@ Dùng chung cho **mọi dự án**. Không phát sinh chi phí: ưu tiên hạn 
 | 1 | Cài **Node.js 24 LTS** từ [nodejs.org](https://nodejs.org) (bản thấp hơn 22.22.2 OmniRoute sẽ từ chối chạy) |
 | 2 | Tải thư mục này về, mở cửa sổ dòng lệnh tại thư mục `omniroute/`, chạy: **`node cai-dat.mjs`** |
 
-Script tự làm hết: cài OmniRoute 3.8.52 → tạo mật khẩu quản trị ngẫu nhiên → bật bắt buộc key → khởi động máy chủ nền → hỏi key free (Enter để bỏ qua) → tạo combo `mien-phi` → tạo key cho từng dự án.
+Script tự làm hết: cài OmniRoute 3.8.52 → tạo mật khẩu quản trị ngẫu nhiên → bật bắt buộc key → khởi động máy chủ nền → hỏi key free (Enter để bỏ qua) → tạo combo `mien-phi` → tạo key cho từng dự án → hỏi có mở truy cập từ xa cho điện thoại (Cloudflare Tunnel).
 
 Kết quả lưu tại:
 
 | Tệp | Nội dung |
 |---|---|
 | `~/.omniroute/.env` | Mật khẩu quản trị Dashboard (`INITIAL_PASSWORD`) |
-| `~/.omniroute/khoa-du-an.txt` | Key của từng dự án |
+| `~/.omniroute/khoa-du-an.txt` | Key của từng dự án (có key `dien-thoai` dành cho điện thoại) |
+| `~/.omniroute/dia-chi-tu-xa.txt` | Địa chỉ truy cập từ xa (nếu đã mở tunnel) |
+
+📱 **Dùng trên điện thoại Android:** xem [ANDROID.md](ANDROID.md) — cài Chatbox AI và kết nối từng bước.
 
 (`~` = thư mục người dùng, ví dụ `C:\Users\<tên>` trên Windows, `/Users/<tên>` trên macOS)
 
@@ -100,5 +103,7 @@ Hạn mức do các hãng quy định và có thể thay đổi.
 | Key gọi combo không được phép | ✅ Bị chặn HTTP 403 |
 | Nguồn chưa có key / key lỗi → tự chuyển sang Pollinations | ✅ |
 | `omniroute chat` với `OMNIROUTE_API_KEY` | ✅ Qua xác thực |
+| Gọi qua địa chỉ mạng nội bộ (như điện thoại cùng Wi-Fi) | ✅ Có key: qua; không key: HTTP 401 |
+| Mở Cloudflare Tunnel (`--tu-xa`) | ⏳ Chưa chạy thử — môi trường thử không cho mở tunnel ra Internet |
 | Nhận câu trả lời thật | ⏳ Máy thử bị chặn mạng ra ngoài — cần chạy trên máy của bạn |
 | Chạy trên Windows / macOS | ⏳ Chưa thử trực tiếp (script dùng Node.js thuần, không cần bash) |

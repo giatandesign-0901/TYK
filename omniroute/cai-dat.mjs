@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 // Cài đặt + cấu hình OmniRoute trọn gói (Windows / macOS / Linux). Chạy lại nhiều lần được.
 //
-//   node cai-dat.mjs
+//   node cai-dat.mjs            (hỏi có mở truy cập từ xa hay không)
+//   node cai-dat.mjs --tu-xa    (mở luôn Cloudflare Tunnel, không hỏi)
 //
 // Các bước: kiểm tra Node → cài omniroute → tạo ~/.omniroute/.env → khởi động máy chủ
-// → (tuỳ chọn) nhập key free Gemini/Cerebras/Groq → tạo combo + key dự án theo cau-hinh.json.
+// → (tuỳ chọn) nhập key free Gemini/Cerebras/Groq → tạo combo + key dự án theo cau-hinh.json
+// → (tuỳ chọn) mở Cloudflare Tunnel để điện thoại dùng từ xa.
 import { spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, chmodSync } from "node:fs";
-import { homedir } from "node:os";
+import { homedir, networkInterfaces } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createInterface } from "node:readline/promises";
@@ -19,7 +21,11 @@ const URL_BASE = process.env.OMNIROUTE_URL || `http://127.0.0.1:${PORT}`;
 const DATA_DIR = join(homedir(), ".omniroute");
 const ENV_FILE = join(DATA_DIR, ".env");
 const KEYS_FILE = join(DATA_DIR, "khoa-du-an.txt");
-const CONFIG_FILE = process.argv[2] || join(dirname(fileURLToPath(import.meta.url)), "cau-hinh.json");
+const REMOTE_FILE = join(DATA_DIR, "dia-chi-tu-xa.txt");
+const ARGS = process.argv.slice(2);
+const TU_XA = ARGS.includes("--tu-xa");
+const CONFIG_FILE =
+  ARGS.find((a) => !a.startsWith("--")) || join(dirname(fileURLToPath(import.meta.url)), "cau-hinh.json");
 const IS_WIN = process.platform === "win32";
 
 const FREE_PROVIDERS = [
@@ -175,7 +181,6 @@ for (const p of FREE_PROVIDERS) {
   const r = await api("POST", "/api/providers", { provider: p.id, apiKey: key, name: `${p.id}-free` });
   console.log(r.ok ? `  + ${p.ten}: đã kết nối` : `  ✗ ${p.ten}: ${JSON.stringify(r.data).slice(0, 200)}`);
 }
-rl?.close();
 
 // ── 6. Combo + key dự án theo cau-hinh.json ──────────────────────────
 const config = JSON.parse(readFileSync(CONFIG_FILE, "utf8"));
@@ -216,13 +221,58 @@ if (newKeys.length) {
   } catch {}
 }
 
+// ── 7. Truy cập từ điện thoại ────────────────────────────────────────
+buoc("Truy cập từ điện thoại");
+// Cùng Wi-Fi: địa chỉ mạng nội bộ của máy này
+const lanUrls = Object.values(networkInterfaces())
+  .flat()
+  .filter((i) => i && i.family === "IPv4" && !i.internal)
+  .map((i) => `http://${i.address}:${PORT}/v1`);
+
+// Ở xa: Cloudflare Quick Tunnel (miễn phí, không cần tài khoản; địa chỉ đổi mỗi lần tunnel khởi động lại)
+const tunnelStatus = (d) => (d && typeof d.status === "object" && d.status ? d.status : d) || {};
+let remoteUrl = tunnelStatus((await api("GET", "/api/tunnels/cloudflared")).data).apiUrl || null;
+if (remoteUrl) {
+  console.log("  = Cloudflare Tunnel đang chạy");
+} else {
+  let want = TU_XA;
+  if (!want && rl) {
+    const a = await rl.question("  Mở truy cập từ xa (dùng điện thoại khi không cùng Wi-Fi)? [c/K]: ");
+    want = /^c(o|ó)?$/i.test(a.trim());
+  }
+  if (want) {
+    console.log("  đang mở Cloudflare Tunnel (lần đầu sẽ tự tải cloudflared)...");
+    const r = await api("POST", "/api/tunnels/cloudflared", { action: "enable" });
+    if (!r.ok) {
+      console.log(`  ✗ Không mở được tunnel: ${JSON.stringify(r.data).slice(0, 300)}`);
+    } else {
+      remoteUrl = tunnelStatus(r.data).apiUrl || null;
+      for (let i = 0; i < 30 && !remoteUrl; i++) {
+        await sleep(3000);
+        remoteUrl = tunnelStatus((await api("GET", "/api/tunnels/cloudflared")).data).apiUrl || null;
+      }
+      console.log(remoteUrl ? "  + đã mở" : "  ✗ Tunnel chưa có địa chỉ — xem Dashboard → Tunnels.");
+    }
+  } else {
+    console.log("  - bỏ qua truy cập từ xa (chạy  node cai-dat.mjs --tu-xa  để mở sau)");
+  }
+}
+if (remoteUrl) writeFileSync(REMOTE_FILE, remoteUrl + "\n");
+rl?.close();
+
 // ── Tổng kết ─────────────────────────────────────────────────────────
+const hostOf = (u) => u.replace(/\/v1$/, "");
 console.log(`
 ✓ Hoàn tất.
 
   Dashboard     : ${URL_BASE.replace("127.0.0.1", "localhost")}   (mật khẩu: INITIAL_PASSWORD trong ${ENV_FILE})
   Key dự án     : ${KEYS_FILE}
   Base URL (API): ${URL_BASE.replace("127.0.0.1", "localhost")}/v1    model = mien-phi
+
+  Điện thoại (Chatbox AI → OpenAI API Compatible), API Key = key "dien-thoai", Model = mien-phi:
+    Cùng Wi-Fi  : ${lanUrls.length ? lanUrls.map((u) => `API Host ${hostOf(u)}`).join("  |  ") : "(không tìm thấy địa chỉ mạng nội bộ)"}
+    Từ xa       : ${remoteUrl ? `API Host ${hostOf(remoteUrl)}   (lưu tại ${REMOTE_FILE})` : "(chưa mở — chạy  node cai-dat.mjs --tu-xa)"}
+    ${remoteUrl ? "⚠ Địa chỉ từ xa ĐỔI mỗi khi máy tính/tunnel khởi động lại → chạy lại script rồi cập nhật trong Chatbox." : ""}
 
   Khi Claude hết lượt (hỏi từ dòng lệnh):
     macOS/Linux : OMNIROUTE_API_KEY=<key-dự-án> omniroute chat --model mien-phi "câu hỏi"
