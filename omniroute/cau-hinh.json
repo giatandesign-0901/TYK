@@ -1,0 +1,29 @@
+{
+  "combos": [
+    {
+      "name": "nhanh",
+      "description": "Việc đơn giản, nhiều lượt: định dạng, dịch, tóm tắt ngắn",
+      "strategy": "priority",
+      "models": [
+        { "provider": "anthropic", "model": "claude-haiku-5-5" },
+        { "provider": "anthropic", "model": "claude-sonnet-5-5" }
+      ],
+      "config": { "maxRetries": 1, "timeoutMs": 60000 }
+    },
+    {
+      "name": "chinh-xac",
+      "description": "Việc cần độ chính xác: phân tích, đối chiếu số liệu, lập kế hoạch, viết code",
+      "strategy": "priority",
+      "models": [
+        { "provider": "anthropic", "model": "claude-opus-5-5" },
+        { "provider": "anthropic", "model": "claude-sonnet-5-5" }
+      ],
+      "config": { "maxRetries": 2, "timeoutMs": 180000 }
+    }
+  ],
+  "_ghi_chu_keys": "Mỗi dự án 1 key. Thêm dự án = thêm 1 dòng rồi chạy lại script. Hạn mức USD là GIÁ TRỊ MẪU, 0 = không giới hạn.",
+  "keys": [
+    { "name": "chung",    "combos": ["nhanh", "chinh-xac"], "daily": 5, "monthly": 50 },
+    { "name": "tyk",      "combos": ["nhanh", "chinh-xac"], "daily": 5, "monthly": 50 }
+  ]
+}
