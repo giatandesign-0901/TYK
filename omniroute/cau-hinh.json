@@ -2,13 +2,14 @@
   "combos": [
     {
       "name": "mien-phi",
-      "description": "Dự phòng khi Claude hết lượt — chỉ nguồn free chính thức. KHÔNG gửi dữ liệu mật.",
+      "description": "Dự phòng khi Claude hết lượt — nguồn free KHÔNG cần đăng ký. KHÔNG gửi dữ liệu mật.",
       "strategy": "priority",
       "models": [
-        { "provider": "gemini",   "model": "gemini-2.5-flash" },
-        { "provider": "cerebras", "model": "gpt-oss-120b" },
-        { "provider": "groq",     "model": "llama-3.3-70b-versatile" },
-        { "provider": "groq",     "model": "groq/openai/gpt-oss-120b" }
+        { "provider": "pollinations", "model": "pollinations/openai" },
+        { "provider": "pollinations", "model": "pollinations/deepseek" },
+        { "provider": "uncloseai",    "model": "uncloseai/qwen3.6:27b" },
+        { "provider": "uncloseai",    "model": "uncloseai/gemma4:31b" },
+        { "provider": "pollinations", "model": "pollinations/mistral" }
       ],
       "config": { "maxRetries": 1, "timeoutMs": 120000 }
     }

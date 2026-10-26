@@ -1,6 +1,6 @@
 # OmniRoute – AI miễn phí dự phòng khi Claude hết lượt
 
-Dùng chung cho **mọi dự án**. Không phát sinh chi phí: chỉ dùng hạn mức free chính thức của Google, Cerebras, Groq.
+Dùng chung cho **mọi dự án**. Không phát sinh chi phí, **không cần đăng ký tài khoản hay key** nào.
 
 ## Nguyên tắc vận hành
 
@@ -21,20 +21,21 @@ Dùng chung cho **mọi dự án**. Không phát sinh chi phí: chỉ dùng hạ
 | Khung SOP / checklist mẫu không chứa số liệu thật | Dữ liệu nhân sự, tài chính |
 | Code không chứa mật khẩu / key | Mật khẩu, API key, tệp `.env` |
 
-Lý do: hạn mức free của các hãng có thể dùng dữ liệu gửi lên để cải thiện dịch vụ (ví dụ gói free Gemini API).
+Lý do: các nguồn ẩn danh không có cam kết bảo mật — dữ liệu gửi lên có thể bị lưu hoặc dùng lại.
 
 ## Combo `mien-phi`
 
-Chế độ `priority`: dùng nguồn đầu, hết lượt/lỗi thì tự chuyển nguồn sau.
+Chế độ `priority`: dùng nguồn đầu, lỗi/quá tải thì tự chuyển nguồn sau. Cả 5 nguồn đều **không cần key**.
 
-| # | Nguồn | Model | Hạn mức free (theo OmniRoute) |
-|---|---|---|---|
-| 1 | Google AI Studio | `gemini-2.5-flash` | 1.500 yêu cầu/ngày |
-| 2 | Cerebras | `gpt-oss-120b` | 1 triệu token/ngày |
-| 3 | Groq | `llama-3.3-70b-versatile` | 30 yêu cầu/phút, 14.400/ngày |
-| 4 | Groq | `openai/gpt-oss-120b` | (chung hạn mức Groq) |
+| # | Nguồn | Model |
+|---|---|---|
+| 1 | Pollinations | `openai` |
+| 2 | Pollinations | `deepseek` |
+| 3 | UncloseAI | `qwen3.6:27b` |
+| 4 | UncloseAI | `gemma4:31b` |
+| 5 | Pollinations | `mistral` |
 
-Hạn mức do các hãng quy định và có thể thay đổi.
+Lưu ý: nguồn ẩn danh **chậm và kém ổn định hơn** Claude, thường giới hạn số yêu cầu/phút, có thể ngừng bất cứ lúc nào. Chỉ dùng tạm khi Claude hết lượt.
 
 ## Cài đặt lần đầu (1 lần duy nhất)
 
@@ -43,9 +44,7 @@ Hạn mức do các hãng quy định và có thể thay đổi.
 | 1 | `npm install -g omniroute` |
 | 2 | Chép `.env.example` → `.env`, đổi `INITIAL_PASSWORD` |
 | 3 | `omniroute serve --no-open` (hoặc `omniroute autostart enable` để tự chạy khi bật máy) |
-| 4 | Đăng ký **key free** (không cần thẻ): [aistudio.google.com](https://aistudio.google.com) · [cloud.cerebras.ai](https://cloud.cerebras.ai) · [console.groq.com](https://console.groq.com) |
-| 5 | Dashboard `http://localhost:20128` → Providers → nhập 3 key trên (Gemini, Cerebras, Groq) |
-| 6 | `OMNIROUTE_PASSWORD=<mật-khẩu> ./cau-hinh.sh` → lưu key dự án được in ra (chỉ in 1 lần) |
+| 4 | `OMNIROUTE_PASSWORD=<mật-khẩu> ./cau-hinh.sh` → lưu key dự án được in ra (chỉ in 1 lần) |
 
 ## Dùng khi Claude hết lượt
 
@@ -80,7 +79,8 @@ curl http://localhost:20128/v1/chat/completions \
 
 | Kiểm tra | Kết quả |
 |---|---|
-| Tạo combo `mien-phi` (4 nguồn, đúng nhà cung cấp) | ✅ |
+| Tạo combo `mien-phi` (5 nguồn, đúng nhà cung cấp) | ✅ |
 | Tạo key, chạy lại không tạo trùng, đồng bộ quyền key cũ | ✅ |
 | Key gọi combo không được phép → bị chặn | ✅ HTTP 403 |
-| Gọi model thật | ⏳ Cần nhập key free ở bước 5 |
+| Combo dùng nguồn không key: OmniRoute tự gọi Pollinations, không cần kết nối/khai báo key | ✅ |
+| Nhận câu trả lời thật | ⏳ Máy thử bị chặn mạng ra ngoài — cần chạy trên máy của bạn |
