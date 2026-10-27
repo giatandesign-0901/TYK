@@ -23,6 +23,8 @@ Kết quả lưu tại:
 
 (`~` = thư mục người dùng, ví dụ `C:\Users\<tên>` trên Windows, `/Users/<tên>` trên macOS)
 
+**Kiểm tra nhanh:** `node kiem-tra.mjs` — kiểm tra key từng nguồn và gửi thử từng model trong combo, in rõ model nào chạy/lỗi gì (không in key).
+
 **Chạy lại `node cai-dat.mjs` bất cứ lúc nào** — an toàn, không tạo trùng. Dùng khi: thêm key free, thêm dự án, hoặc máy chủ chưa chạy sau khi khởi động lại máy.
 
 ## Key free (tuỳ chọn, nên có)
@@ -78,7 +80,7 @@ Chế độ `priority`: dùng nguồn đầu, hết lượt/lỗi thì tự chuy
 |---|---|---|---|---|
 | 1 | Google AI Studio | `gemini-2.5-flash` | Uy tín, key free | 1.500 yêu cầu/ngày |
 | 2 | Cerebras | `gpt-oss-120b` | Uy tín, key free | 1 triệu token/ngày |
-| 3 | Groq | `llama-3.3-70b-versatile` | Uy tín, key free | 14.400 yêu cầu/ngày |
+| 3 | Groq | `qwen/qwen3.8-27b` | Uy tín, key free | theo hạn mức free Groq |
 | 4 | Groq | `openai/gpt-oss-120b` | Uy tín, key free | chung hạn mức Groq |
 | 5 | Pollinations | `openai` | Ẩn danh, không key | không công bố |
 | 6 | Pollinations | `deepseek` | Ẩn danh, không key | không công bố |
@@ -90,7 +92,7 @@ Hạn mức do các hãng quy định và có thể thay đổi.
 1. Thêm 1 dòng vào `keys` trong `cau-hinh.json`: `{ "name": "ten-du-an", "combos": ["mien-phi"] }`
 2. Chạy lại `node cai-dat.mjs` → key mới được ghi thêm vào `~/.omniroute/khoa-du-an.txt`.
 
-Đổi danh sách model của combo đã tạo: sửa trong Dashboard → Combos (script không ghi đè combo đã có).
+Đổi danh sách model của combo: sửa `models` trong `cau-hinh.json` rồi chạy lại `node cai-dat.mjs` — script tự cập nhật combo đã có.
 
 ## Bảo mật (script đã tự làm)
 

@@ -264,10 +264,18 @@ for (const p of FREE_PROVIDERS) {
 const config = JSON.parse(readFileSync(CONFIG_FILE, "utf8"));
 
 buoc("Tạo combo");
-const existingCombos = new Set(((await api("GET", "/api/combos")).data.combos || []).map((c) => c.name));
+const existingCombos = new Map(((await api("GET", "/api/combos")).data.combos || []).map((c) => [c.name, c]));
+const modelList = (models) => (models || []).map((m) => (typeof m === "string" ? m : m.model)).join("|");
 for (const combo of config.combos) {
-  if (existingCombos.has(combo.name)) {
-    console.log(`  = ${combo.name} (đã có)`);
+  const existing = existingCombos.get(combo.name);
+  if (existing) {
+    // Đồng bộ danh sách model theo cau-hinh.json (ví dụ khi hãng ngừng một model)
+    if (modelList(existing.models) === modelList(combo.models)) {
+      console.log(`  = ${combo.name} (đã có)`);
+    } else {
+      const r = await api("PATCH", `/api/combos/${existing.id}`, { models: combo.models });
+      console.log(r.ok ? `  ~ ${combo.name}: đã cập nhật danh sách model` : `  ✗ ${combo.name}: ${JSON.stringify(r.data).slice(0, 200)}`);
+    }
     continue;
   }
   const r = await api("POST", "/api/combos", combo);

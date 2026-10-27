@@ -7,7 +7,7 @@
       "models": [
         { "provider": "gemini",       "model": "gemini/gemini-2.5-flash" },
         { "provider": "cerebras",     "model": "cerebras/gpt-oss-120b" },
-        { "provider": "groq",         "model": "groq/llama-3.3-70b-versatile" },
+        { "provider": "groq",         "model": "groq/qwen/qwen3.8-27b" },
         { "provider": "groq",         "model": "groq/openai/gpt-oss-120b" },
         { "provider": "pollinations", "model": "pollinations/openai" },
         { "provider": "pollinations", "model": "pollinations/deepseek" }
