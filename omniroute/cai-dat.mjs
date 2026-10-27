@@ -266,15 +266,17 @@ const config = JSON.parse(readFileSync(CONFIG_FILE, "utf8"));
 buoc("Tạo combo");
 const existingCombos = new Map(((await api("GET", "/api/combos")).data.combos || []).map((c) => [c.name, c]));
 const modelList = (models) => (models || []).map((m) => (typeof m === "string" ? m : m.model)).join("|");
+// Các thiết lập combo cần khớp cau-hinh.json (chỉ so các khoá có trong tệp cấu hình)
+const configDiffers = (cur = {}, want = {}) => Object.keys(want).some((k) => cur?.[k] !== want[k]);
 for (const combo of config.combos) {
   const existing = existingCombos.get(combo.name);
   if (existing) {
     // Đồng bộ danh sách model theo cau-hinh.json (ví dụ khi hãng ngừng một model)
-    if (modelList(existing.models) === modelList(combo.models)) {
+    if (modelList(existing.models) === modelList(combo.models) && !configDiffers(existing.config, combo.config)) {
       console.log(`  = ${combo.name} (đã có)`);
     } else {
-      const r = await api("PATCH", `/api/combos/${existing.id}`, { models: combo.models });
-      console.log(r.ok ? `  ~ ${combo.name}: đã cập nhật danh sách model` : `  ✗ ${combo.name}: ${JSON.stringify(r.data).slice(0, 200)}`);
+      const r = await api("PATCH", `/api/combos/${existing.id}`, { models: combo.models, config: combo.config });
+      console.log(r.ok ? `  ~ ${combo.name}: đã cập nhật model + thiết lập` : `  ✗ ${combo.name}: ${JSON.stringify(r.data).slice(0, 200)}`);
     }
     continue;
   }

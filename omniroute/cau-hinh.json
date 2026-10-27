@@ -12,7 +12,7 @@
         { "provider": "pollinations", "model": "pollinations/openai" },
         { "provider": "pollinations", "model": "pollinations/deepseek" }
       ],
-      "config": { "maxRetries": 1, "timeoutMs": 120000 }
+      "config": { "maxRetries": 0, "failoverBeforeRetry": true, "targetTimeoutMs": 25000, "timeoutMs": 90000 }
     }
   ],
   "_ghi_chu_keys": "Mỗi dự án 1 key. Thêm dự án = thêm 1 dòng rồi chạy lại: node cai-dat.mjs",
