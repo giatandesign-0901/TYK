@@ -110,5 +110,5 @@ Hạn mức do các hãng quy định và có thể thay đổi.
 | Gọi qua địa chỉ mạng nội bộ (như điện thoại cùng Wi-Fi) | ✅ Có key: qua; không key: HTTP 401 |
 | Mở Cloudflare Tunnel (`--tu-xa`) | ✅ Trên máy Windows của người dùng |
 | Nhận câu trả lời thật | ⏳ Máy thử bị chặn mạng ra ngoài — cần chạy trên máy của bạn |
-| Chạy trên Windows 11 thật (máy người dùng) | ✅ Cài đặt, kết nối Gemini + Groq, mở Cloudflare Tunnel |
+| Chạy trên Windows thật (máy người dùng) | ✅ Cài đặt, kết nối Gemini + Groq, mở Cloudflare Tunnel |
 | Nhập key che bằng `*`, `--doi-key` thay key | ✅ (terminal giả lập) |
