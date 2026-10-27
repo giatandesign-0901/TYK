@@ -54,7 +54,7 @@ Khi dán, key hiện thành `*****` — chụp/chép kết quả không làm l�
 | Cách | Lệnh / thiết lập |
 |---|---|
 | Dòng lệnh macOS/Linux | `OMNIROUTE_API_KEY=<key-dự-án> omniroute chat --model mien-phi "câu hỏi"` |
-| Dòng lệnh Windows (PowerShell) | `$env:OMNIROUTE_API_KEY="<key-dự-án>"; omniroute chat --model mien-phi "câu hỏi"` |
+| Dòng lệnh Windows (PowerShell) | `$env:OMNIROUTE_API_KEY="<key-dự-án>"; omniroute.cmd chat --model mien-phi "câu hỏi"` (dùng `omniroute.cmd` — PowerShell mặc định chặn `omniroute.ps1`) |
 | Công cụ chuẩn OpenAI (Cursor, Cline, Codex, script…) | Base URL `http://localhost:20128/v1`, API key = key dự án, model `mien-phi` |
 
 ## Dữ liệu được / không được gửi qua `mien-phi`

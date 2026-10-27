@@ -334,7 +334,7 @@ console.log(`
 
   Khi Claude hết lượt (hỏi từ dòng lệnh):
     macOS/Linux : OMNIROUTE_API_KEY=<key-dự-án> omniroute chat --model mien-phi "câu hỏi"
-    Windows     : $env:OMNIROUTE_API_KEY="<key-dự-án>"; omniroute chat --model mien-phi "câu hỏi"
+    Windows     : $env:OMNIROUTE_API_KEY="<key-dự-án>"; omniroute.cmd chat --model mien-phi "câu hỏi"
 
   Thêm key Gemini/Cerebras/Groq: chạy lại  node cai-dat.mjs
   Thêm dự án: thêm 1 dòng vào cau-hinh.json rồi chạy lại  node cai-dat.mjs
