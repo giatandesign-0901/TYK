@@ -215,6 +215,19 @@ function askSecret(question) {
     stdin.on("data", onData);
   });
 }
+// Lấy key từ bộ nhớ tạm (khi không dán được vào cửa sổ dòng lệnh), rồi xoá bộ nhớ tạm
+function readClipboard() {
+  const r = IS_WIN
+    ? spawnSync("powershell", ["-NoProfile", "-Command", "Get-Clipboard | Out-String"], { encoding: "utf8" })
+    : process.platform === "darwin"
+      ? spawnSync("pbpaste", [], { encoding: "utf8" })
+      : null;
+  return r && r.status === 0 ? r.stdout.trim() : null;
+}
+function clearClipboard() {
+  if (IS_WIN) spawnSync("powershell", ["-NoProfile", "-Command", "Set-Clipboard -Value ' '"]);
+  else if (process.platform === "darwin") spawnSync("pbcopy", [], { input: "" });
+}
 for (const p of FREE_PROVIDERS) {
   if (connected.has(p.id) && !(DOI_KEY && TTY)) {
     console.log(`  = ${p.ten}: đã kết nối${DOI_KEY ? "" : "  (thay key: node cai-dat.mjs --doi-key)"}`);
@@ -225,8 +238,17 @@ for (const p of FREE_PROVIDERS) {
     continue;
   }
   const connId = connected.get(p.id);
-  const hoi = connId ? "dán key MỚI, Enter để giữ key cũ" : "Enter để bỏ qua";
-  const key = (await askSecret(`  ${p.ten} — ${hoi} (lấy tại ${p.lay_key}): `)).trim();
+  const hoi = connId ? "dán key MỚI (hoặc gõ c = lấy từ bộ nhớ tạm), Enter để giữ key cũ" : "dán key (hoặc gõ c = lấy từ bộ nhớ tạm), Enter để bỏ qua";
+  let key = (await askSecret(`  ${p.ten} — ${hoi}\n    lấy key tại ${p.lay_key}\n    > `)).trim();
+  if (key.toLowerCase() === "c") {
+    key = readClipboard();
+    if (!key || /\s/.test(key) || key.length > 300) {
+      console.log(`  ✗ ${p.ten}: bộ nhớ tạm không chứa key (hãy bấm Copy key trên trang của hãng NGAY TRƯỚC khi gõ c) — bỏ qua`);
+      continue;
+    }
+    clearClipboard();
+    console.log(`    (đã lấy key từ bộ nhớ tạm: ${key.length} ký tự, bắt đầu ${key.slice(0, 3)}…; đã xoá bộ nhớ tạm)`);
+  }
   if (!key) {
     console.log(connId ? `  = ${p.ten}: giữ key cũ` : `  - ${p.ten}: bỏ qua (có thể chạy lại script để thêm sau)`);
     continue;

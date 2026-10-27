@@ -37,6 +37,8 @@ Không có key vẫn chạy được (bằng Pollinations). Có key thì nhanh, 
 
 Khi dán, key hiện thành `*****` — chụp/chép kết quả không làm lộ key.
 
+**Không dán được vào cửa sổ dòng lệnh?** Khi script hỏi key: sang trang của hãng bấm **Copy key**, quay lại gõ `c` rồi Enter — script tự lấy key từ bộ nhớ tạm và xoá bộ nhớ tạm sau đó.
+
 **Key bị lộ hoặc hết hạn?** Tạo key mới trên trang của hãng (xoá key cũ), rồi chạy `node cai-dat.mjs --doi-key` → dán key mới cho nguồn cần thay, Enter để giữ key cũ.
 
 ## Nguyên tắc vận hành
