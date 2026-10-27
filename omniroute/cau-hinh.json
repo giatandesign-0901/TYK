@@ -5,7 +5,7 @@
       "description": "Dự phòng khi Claude hết lượt — ưu tiên hãng uy tín (key free), nguồn ẩn danh chỉ là lưới an toàn cuối. KHÔNG gửi dữ liệu mật.",
       "strategy": "priority",
       "models": [
-        { "provider": "gemini",       "model": "gemini/gemini-2.5-flash" },
+        { "provider": "gemini",       "model": "gemini/gemini-3.8-flash" },
         { "provider": "cerebras",     "model": "cerebras/gpt-oss-120b" },
         { "provider": "groq",         "model": "groq/qwen/qwen3.8-27b" },
         { "provider": "groq",         "model": "groq/openai/gpt-oss-120b" },

@@ -78,7 +78,7 @@ Chế độ `priority`: dùng nguồn đầu, hết lượt/lỗi thì tự chuy
 
 | # | Nguồn | Model | Loại | Hạn mức free (theo OmniRoute) |
 |---|---|---|---|---|
-| 1 | Google AI Studio | `gemini-2.5-flash` | Uy tín, key free | 1.500 yêu cầu/ngày |
+| 1 | Google AI Studio | `gemini-3.8-flash` | Uy tín, key free | theo hạn mức free Gemini API |
 | 2 | Cerebras | `gpt-oss-120b` | Uy tín, key free | 1 triệu token/ngày |
 | 3 | Groq | `qwen/qwen3.8-27b` | Uy tín, key free | theo hạn mức free Groq |
 | 4 | Groq | `openai/gpt-oss-120b` | Uy tín, key free | chung hạn mức Groq |
