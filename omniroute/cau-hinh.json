@@ -15,7 +15,7 @@
       "config": { "maxRetries": 1, "timeoutMs": 120000 }
     }
   ],
-  "_ghi_chu_keys": "Mỗi dự án 1 key. Thêm dự án = thêm 1 dòng rồi chạy lại cau-hinh.sh.",
+  "_ghi_chu_keys": "Mỗi dự án 1 key. Thêm dự án = thêm 1 dòng rồi chạy lại: node cai-dat.mjs",
   "keys": [
     { "name": "chung", "combos": ["mien-phi"] },
     { "name": "tyk",   "combos": ["mien-phi"] },

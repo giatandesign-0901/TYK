@@ -97,7 +97,7 @@ Hạn mức do các hãng quy định và có thể thay đổi.
 
 | Kiểm tra | Kết quả |
 |---|---|
-| `node cai-dat.mjs` lần đầu: tạo `.env`, khởi động máy chủ, tạo combo + 2 key | ✅ |
+| `node cai-dat.mjs` lần đầu: tạo `.env`, khởi động máy chủ, tạo combo + 3 key (chung, tyk, dien-thoai) | ✅ |
 | Chạy lại: không tạo trùng, đồng bộ quyền key | ✅ |
 | Gọi `/v1` không có key | ✅ Bị chặn HTTP 401 |
 | Key gọi combo không được phép | ✅ Bị chặn HTTP 403 |
