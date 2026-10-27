@@ -4,6 +4,8 @@
 //   node cai-dat.mjs            (hỏi có mở truy cập từ xa hay không)
 //   node cai-dat.mjs --tu-xa    (mở luôn Cloudflare Tunnel, không hỏi)
 //   node cai-dat.mjs --doi-key  (thay key Gemini/Cerebras/Groq đã kết nối, ví dụ khi key bị lộ)
+//   node cai-dat.mjs --tu-khoi-dong     (Windows: tự chạy "--tu-xa" mỗi lần đăng nhập, qua Task Scheduler)
+//   node cai-dat.mjs --bo-tu-khoi-dong  (Windows: gỡ tác vụ tự khởi động)
 //
 // Các bước: kiểm tra Node → cài omniroute → tạo ~/.omniroute/.env → khởi động máy chủ
 // → (tuỳ chọn) nhập key free Gemini/Cerebras/Groq → tạo combo + key dự án theo cau-hinh.json
@@ -23,6 +25,8 @@ const DATA_DIR = join(homedir(), ".omniroute");
 const ENV_FILE = join(DATA_DIR, ".env");
 const KEYS_FILE = join(DATA_DIR, "khoa-du-an.txt");
 const REMOTE_FILE = join(DATA_DIR, "dia-chi-tu-xa.txt");
+const AUTOSTART_LOG = join(DATA_DIR, "tu-khoi-dong.log");
+const TASK_NAME = "OmniRoute";
 const ARGS = process.argv.slice(2);
 const TU_XA = ARGS.includes("--tu-xa");
 const DOI_KEY = ARGS.includes("--doi-key");
@@ -46,7 +50,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const winCmd = (cmd, args) => [cmd, ...args].join(" ");
 const run = (cmd, args, opts = {}) =>
   IS_WIN
-    ? spawnSync(winCmd(cmd, args), { encoding: "utf8", shell: true, ...opts })
+    ? spawnSync(winCmd(cmd, args), { encoding: "utf8", shell: true, windowsHide: true, ...opts })
     : spawnSync(cmd, args, { encoding: "utf8", ...opts });
 
 // ── 1. Node.js ────────────────────────────────────────────────────────
@@ -58,6 +62,55 @@ if (!nodeOk) {
     `OmniRoute cần Node.js 24 LTS (tối thiểu 22.22.2). Máy đang có ${process.version}.\n` +
       `  Tải tại https://nodejs.org (chọn bản LTS), cài xong mở lại cửa sổ dòng lệnh rồi chạy lại.`
   );
+}
+
+// ── Tự khởi động cùng Windows (Task Scheduler) ───────────────────────
+if (ARGS.includes("--tu-khoi-dong") || ARGS.includes("--bo-tu-khoi-dong")) {
+  if (!IS_WIN) loi("Tự khởi động qua Task Scheduler chỉ dành cho Windows.");
+  mkdirSync(DATA_DIR, { recursive: true });
+  if (ARGS.includes("--bo-tu-khoi-dong")) {
+    const r = spawnSync("schtasks", ["/Delete", "/TN", TASK_NAME, "/F"], { encoding: "utf8" });
+    console.log(r.status === 0 ? `✓ Đã gỡ tác vụ "${TASK_NAME}".` : `✗ ${(r.stderr || r.stdout).trim()}`);
+    process.exit(r.status || 0);
+  }
+  // Lệnh chạy khi đăng nhập: node cai-dat.mjs --tu-xa, ghi kết quả vào tu-khoi-dong.log.
+  // Mã hoá Base64 (-EncodedCommand) để đường dẫn có dấu cách (vd "HUY PKT") không bị lỗi trích dẫn.
+  const q = (v) => `'${v.replace(/'/g, "''")}'`;
+  const script = fileURLToPath(import.meta.url);
+  const ps = `& ${q(process.execPath)} ${q(script)} --tu-xa *> ${q(AUTOSTART_LOG)}`;
+  const encoded = Buffer.from(ps, "utf16le").toString("base64");
+  const xmlEsc = (v) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const user = xmlEsc(`${process.env.USERDOMAIN || "."}\\${process.env.USERNAME}`);
+  const xml = `<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo><Description>Bật OmniRoute + Cloudflare Tunnel khi đăng nhập (tạo bởi cai-dat.mjs)</Description></RegistrationInfo>
+  <Triggers><LogonTrigger><Enabled>true</Enabled><UserId>${user}</UserId><Delay>PT1M</Delay></LogonTrigger></Triggers>
+  <Principals><Principal id="Author"><UserId>${user}</UserId><LogonType>InteractiveToken</LogonType><RunLevel>LeastPrivilege</RunLevel></Principal></Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
+    <Enabled>true</Enabled>
+  </Settings>
+  <Actions Context="Author"><Exec>
+    <Command>powershell.exe</Command>
+    <Arguments>-NoProfile -WindowStyle Hidden -EncodedCommand ${encoded}</Arguments>
+    <WorkingDirectory>${xmlEsc(dirname(script))}</WorkingDirectory>
+  </Exec></Actions>
+</Task>
+`;
+  const xmlFile = join(DATA_DIR, "omniroute-task.xml");
+  writeFileSync(xmlFile, Buffer.from("\ufeff" + xml, "utf16le"));
+  const r = spawnSync("schtasks", ["/Create", "/TN", TASK_NAME, "/XML", xmlFile, "/F"], { encoding: "utf8" });
+  if (r.status !== 0) loi(`Tạo tác vụ thất bại: ${(r.stderr || r.stdout).trim()}`);
+  console.log(`✓ Đã tạo tác vụ "${TASK_NAME}": mỗi lần đăng nhập Windows, sau 1 phút tự bật OmniRoute + tunnel.
+  Nhật ký lần chạy gần nhất : ${AUTOSTART_LOG}
+  Địa chỉ từ xa mới nhất   : ${REMOTE_FILE}
+  Chạy thử ngay            : schtasks /Run /TN ${TASK_NAME}
+  Gỡ bỏ                    : node cai-dat.mjs --bo-tu-khoi-dong`);
+  process.exit(0);
 }
 
 // ── 2. Cài omniroute ──────────────────────────────────────────────────
@@ -121,7 +174,7 @@ if (await serverUp()) {
 } else {
   console.log("  khởi động nền...");
   const serveArgs = ["serve", "--daemon", "--no-open", "--no-tray"];
-  const opts = { detached: true, stdio: "ignore" };
+  const opts = { detached: true, stdio: "ignore", windowsHide: true };
   (IS_WIN ? spawn(winCmd("omniroute", serveArgs), { ...opts, shell: true }) : spawn("omniroute", serveArgs, opts)).unref();
   let up = false;
   for (let i = 0; i < 60 && !up; i++) {

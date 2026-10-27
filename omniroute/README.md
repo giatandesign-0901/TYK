@@ -27,6 +27,23 @@ Kết quả lưu tại:
 
 **Chạy lại `node cai-dat.mjs` bất cứ lúc nào** — an toàn, không tạo trùng. Dùng khi: thêm key free, thêm dự án, hoặc máy chủ chưa chạy sau khi khởi động lại máy.
 
+## Tự khởi động cùng Windows
+
+```powershell
+node cai-dat.mjs --tu-khoi-dong
+```
+
+Tạo tác vụ **OmniRoute** trong Task Scheduler: mỗi lần đăng nhập Windows, sau 1 phút tự chạy `node cai-dat.mjs --tu-xa` (ẩn cửa sổ) → bật máy chủ + tunnel.
+
+| Việc | Cách làm |
+|---|---|
+| Chạy thử ngay | `schtasks /Run /TN OmniRoute` |
+| Xem kết quả lần chạy gần nhất | `notepad "$HOME\.omniroute\tu-khoi-dong.log"` |
+| Lấy địa chỉ từ xa mới (sau khi khởi động lại) | `notepad "$HOME\.omniroute\dia-chi-tu-xa.txt"` → cập nhật API Host trong Chatbox nếu đổi |
+| Gỡ bỏ | `node cai-dat.mjs --bo-tu-khoi-dong` |
+
+> Không di chuyển thư mục `omniroute` sau khi tạo tác vụ (tác vụ ghi nhớ đường dẫn). Nếu đã di chuyển: chạy lại `node cai-dat.mjs --tu-khoi-dong`.
+
 ## Key free (tuỳ chọn, nên có)
 
 Không có key vẫn chạy được (bằng Pollinations). Có key thì nhanh, ổn định và đáng tin cậy hơn. Đăng ký không cần thẻ, rồi chạy lại `node cai-dat.mjs` và dán key khi được hỏi:
