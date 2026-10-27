@@ -30,6 +30,8 @@ const TASK_NAME = "OmniRoute";
 const ARGS = process.argv.slice(2);
 const TU_XA = ARGS.includes("--tu-xa");
 const DOI_KEY = ARGS.includes("--doi-key");
+// Chạy nền (Task Scheduler): không hỏi gì, kể cả khi có cửa sổ dòng lệnh ẩn
+const NEN = ARGS.includes("--nen");
 const CONFIG_FILE =
   ARGS.find((a) => !a.startsWith("--")) || join(dirname(fileURLToPath(import.meta.url)), "cau-hinh.json");
 const IS_WIN = process.platform === "win32";
@@ -77,7 +79,10 @@ if (ARGS.includes("--tu-khoi-dong") || ARGS.includes("--bo-tu-khoi-dong")) {
   // Mã hoá Base64 (-EncodedCommand) để đường dẫn có dấu cách (vd "HUY PKT") không bị lỗi trích dẫn.
   const q = (v) => `'${v.replace(/'/g, "''")}'`;
   const script = fileURLToPath(import.meta.url);
-  const ps = `& ${q(process.execPath)} ${q(script)} --tu-xa *> ${q(AUTOSTART_LOG)}`;
+  // Ghi nhật ký UTF-8 (Windows PowerShell mặc định ghi sai bảng mã tiếng Việt)
+  const ps =
+    `[Console]::OutputEncoding = [Text.Encoding]::UTF8; ` +
+    `& ${q(process.execPath)} ${q(script)} --tu-xa --nen 2>&1 | Out-File -FilePath ${q(AUTOSTART_LOG)} -Encoding utf8`;
   const encoded = Buffer.from(ps, "utf16le").toString("base64");
   const xmlEsc = (v) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const user = xmlEsc(`${process.env.USERDOMAIN || "."}\\${process.env.USERNAME}`);
@@ -221,7 +226,7 @@ console.log("  ✓");
 buoc("Kết nối nguồn AI free (Gemini, Cerebras, Groq)");
 const conns = (await api("GET", "/api/providers")).data.connections || [];
 const connected = new Map(conns.map((c) => [c.provider, c.id]));
-const TTY = process.stdin.isTTY;
+const TTY = process.stdin.isTTY && !NEN;
 // Hỏi thường (một dòng)
 async function ask(question) {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
