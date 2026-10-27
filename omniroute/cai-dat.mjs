@@ -3,6 +3,7 @@
 //
 //   node cai-dat.mjs            (hỏi có mở truy cập từ xa hay không)
 //   node cai-dat.mjs --tu-xa    (mở luôn Cloudflare Tunnel, không hỏi)
+//   node cai-dat.mjs --doi-key  (thay key Gemini/Cerebras/Groq đã kết nối, ví dụ khi key bị lộ)
 //
 // Các bước: kiểm tra Node → cài omniroute → tạo ~/.omniroute/.env → khởi động máy chủ
 // → (tuỳ chọn) nhập key free Gemini/Cerebras/Groq → tạo combo + key dự án theo cau-hinh.json
@@ -24,6 +25,7 @@ const KEYS_FILE = join(DATA_DIR, "khoa-du-an.txt");
 const REMOTE_FILE = join(DATA_DIR, "dia-chi-tu-xa.txt");
 const ARGS = process.argv.slice(2);
 const TU_XA = ARGS.includes("--tu-xa");
+const DOI_KEY = ARGS.includes("--doi-key");
 const CONFIG_FILE =
   ARGS.find((a) => !a.startsWith("--")) || join(dirname(fileURLToPath(import.meta.url)), "cau-hinh.json");
 const IS_WIN = process.platform === "win32";
@@ -40,7 +42,12 @@ const loi = (msg) => {
   process.exit(1);
 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const run = (cmd, args, opts = {}) => spawnSync(cmd, args, { encoding: "utf8", shell: IS_WIN, ...opts });
+// Windows cần shell để chạy omniroute.cmd/npm.cmd; ghép sẵn 1 chuỗi lệnh (tham số đều là hằng số) để tránh cảnh báo DEP0190
+const winCmd = (cmd, args) => [cmd, ...args].join(" ");
+const run = (cmd, args, opts = {}) =>
+  IS_WIN
+    ? spawnSync(winCmd(cmd, args), { encoding: "utf8", shell: true, ...opts })
+    : spawnSync(cmd, args, { encoding: "utf8", ...opts });
 
 // ── 1. Node.js ────────────────────────────────────────────────────────
 buoc(`Kiểm tra Node.js (${process.version})`);
@@ -113,11 +120,9 @@ if (await serverUp()) {
   console.log("  = đang chạy");
 } else {
   console.log("  khởi động nền...");
-  spawn("omniroute", ["serve", "--daemon", "--no-open", "--no-tray"], {
-    detached: true,
-    stdio: "ignore",
-    shell: IS_WIN,
-  }).unref();
+  const serveArgs = ["serve", "--daemon", "--no-open", "--no-tray"];
+  const opts = { detached: true, stdio: "ignore" };
+  (IS_WIN ? spawn(winCmd("omniroute", serveArgs), { ...opts, shell: true }) : spawn("omniroute", serveArgs, opts)).unref();
   let up = false;
   for (let i = 0; i < 60 && !up; i++) {
     await sleep(3000);
@@ -162,24 +167,75 @@ console.log("  ✓");
 // ── 5. Key free của các hãng (tuỳ chọn) ───────────────────────────────
 buoc("Kết nối nguồn AI free (Gemini, Cerebras, Groq)");
 const conns = (await api("GET", "/api/providers")).data.connections || [];
-const connected = new Set(conns.map((c) => c.provider));
-const rl = process.stdin.isTTY ? createInterface({ input: process.stdin, output: process.stdout }) : null;
+const connected = new Map(conns.map((c) => [c.provider, c.id]));
+const TTY = process.stdin.isTTY;
+// Hỏi thường (một dòng)
+async function ask(question) {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    return await rl.question(question);
+  } finally {
+    rl.close();
+  }
+}
+// Nhập key: mỗi ký tự hiện thành * để key không lộ trên màn hình (khi chụp/chép kết quả)
+function askSecret(question) {
+  return new Promise((resolve) => {
+    const stdin = process.stdin;
+    process.stdout.write(question);
+    stdin.setRawMode(true);
+    stdin.setEncoding("utf8");
+    stdin.resume();
+    let value = "";
+    const finish = () => {
+      stdin.off("data", onData);
+      stdin.setRawMode(false);
+      stdin.pause();
+      process.stdout.write("\n");
+      resolve(value);
+    };
+    const onData = (chunk) => {
+      for (const ch of chunk) {
+        if (ch === "\r" || ch === "\n") return finish();
+        if (ch === "\u0003") {
+          stdin.setRawMode(false);
+          process.exit(130); // Ctrl+C
+        }
+        if (ch === "\u007f" || ch === "\b") {
+          if (value) {
+            value = value.slice(0, -1);
+            process.stdout.write("\b \b");
+          }
+        } else if (ch >= " ") {
+          value += ch;
+          process.stdout.write("*");
+        }
+      }
+    };
+    stdin.on("data", onData);
+  });
+}
 for (const p of FREE_PROVIDERS) {
-  if (connected.has(p.id)) {
-    console.log(`  = ${p.ten}: đã kết nối`);
+  if (connected.has(p.id) && !(DOI_KEY && TTY)) {
+    console.log(`  = ${p.ten}: đã kết nối${DOI_KEY ? "" : "  (thay key: node cai-dat.mjs --doi-key)"}`);
     continue;
   }
-  if (!rl) {
+  if (!TTY) {
     console.log(`  - ${p.ten}: bỏ qua (không có bàn phím nhập)`);
     continue;
   }
-  const key = (await rl.question(`  ${p.ten} — dán key (lấy tại ${p.lay_key}), Enter để bỏ qua: `)).trim();
+  const connId = connected.get(p.id);
+  const hoi = connId ? "dán key MỚI, Enter để giữ key cũ" : "Enter để bỏ qua";
+  const key = (await askSecret(`  ${p.ten} — ${hoi} (lấy tại ${p.lay_key}): `)).trim();
   if (!key) {
-    console.log(`  - ${p.ten}: bỏ qua (có thể chạy lại script để thêm sau)`);
+    console.log(connId ? `  = ${p.ten}: giữ key cũ` : `  - ${p.ten}: bỏ qua (có thể chạy lại script để thêm sau)`);
     continue;
   }
-  const r = await api("POST", "/api/providers", { provider: p.id, apiKey: key, name: `${p.id}-free` });
-  console.log(r.ok ? `  + ${p.ten}: đã kết nối` : `  ✗ ${p.ten}: ${JSON.stringify(r.data).slice(0, 200)}`);
+  const r = connId
+    ? await api("PATCH", `/api/providers/${connId}`, { apiKey: key, isActive: true })
+    : await api("POST", "/api/providers", { provider: p.id, apiKey: key, name: `${p.id}-free` });
+  const xong = connId ? "đã thay key" : "đã kết nối";
+  console.log(r.ok ? `  + ${p.ten}: ${xong}` : `  ✗ ${p.ten}: ${JSON.stringify(r.data).slice(0, 200)}`);
 }
 
 // ── 6. Combo + key dự án theo cau-hinh.json ──────────────────────────
@@ -227,7 +283,10 @@ buoc("Truy cập từ điện thoại");
 const lanUrls = Object.values(networkInterfaces())
   .flat()
   .filter((i) => i && i.family === "IPv4" && !i.internal)
-  .map((i) => `http://${i.address}:${PORT}/v1`);
+  .map((i) => i.address)
+  // Ưu tiên địa chỉ Wi-Fi/LAN thật (192.168.x, 10.x); 172.x thường là card ảo (WSL, Hyper-V, VirtualBox)
+  .sort((a, b) => /^172\./.test(a) - /^172\./.test(b))
+  .map((a) => `http://${a}:${PORT}/v1`);
 
 // Ở xa: Cloudflare Quick Tunnel (miễn phí, không cần tài khoản; địa chỉ đổi mỗi lần tunnel khởi động lại)
 const tunnelStatus = (d) => (d && typeof d.status === "object" && d.status ? d.status : d) || {};
@@ -236,8 +295,8 @@ if (remoteUrl) {
   console.log("  = Cloudflare Tunnel đang chạy");
 } else {
   let want = TU_XA;
-  if (!want && rl) {
-    const a = await rl.question("  Mở truy cập từ xa (dùng điện thoại khi không cùng Wi-Fi)? [c/K]: ");
+  if (!want && TTY) {
+    const a = await ask("  Mở truy cập từ xa (dùng điện thoại khi không cùng Wi-Fi)? [c/K]: ");
     want = /^c(o|ó)?$/i.test(a.trim());
   }
   if (want) {
@@ -258,7 +317,6 @@ if (remoteUrl) {
   }
 }
 if (remoteUrl) writeFileSync(REMOTE_FILE, remoteUrl + "\n");
-rl?.close();
 
 // ── Tổng kết ─────────────────────────────────────────────────────────
 const hostOf = (u) => u.replace(/\/v1$/, "");
@@ -270,7 +328,7 @@ console.log(`
   Base URL (API): ${URL_BASE.replace("127.0.0.1", "localhost")}/v1    model = mien-phi
 
   Điện thoại (Chatbox AI → OpenAI API Compatible), API Key = key "dien-thoai", Model = mien-phi:
-    Cùng Wi-Fi  : ${lanUrls.length ? lanUrls.map((u) => `API Host ${hostOf(u)}`).join("  |  ") : "(không tìm thấy địa chỉ mạng nội bộ)"}
+    Cùng Wi-Fi  : ${lanUrls.length ? `API Host ${hostOf(lanUrls[0])}` : "(không tìm thấy địa chỉ mạng nội bộ)"}${lanUrls.length > 1 ? `   (dự phòng: ${lanUrls.slice(1).map(hostOf).join(", ")})` : ""}
     Từ xa       : ${remoteUrl ? `API Host ${hostOf(remoteUrl)}   (lưu tại ${REMOTE_FILE})` : "(chưa mở — chạy  node cai-dat.mjs --tu-xa)"}
     ${remoteUrl ? "⚠ Địa chỉ từ xa ĐỔI mỗi khi máy tính/tunnel khởi động lại → chạy lại script rồi cập nhật trong Chatbox." : ""}
 

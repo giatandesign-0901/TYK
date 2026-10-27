@@ -35,6 +35,10 @@ Không có key vẫn chạy được (bằng Pollinations). Có key thì nhanh, 
 | Cerebras | [cloud.cerebras.ai](https://cloud.cerebras.ai) |
 | Groq | [console.groq.com/keys](https://console.groq.com/keys) |
 
+Khi dán, key hiện thành `*****` — chụp/chép kết quả không làm lộ key.
+
+**Key bị lộ hoặc hết hạn?** Tạo key mới trên trang của hãng (xoá key cũ), rồi chạy `node cai-dat.mjs --doi-key` → dán key mới cho nguồn cần thay, Enter để giữ key cũ.
+
 ## Nguyên tắc vận hành
 
 | Tình huống | Dùng gì |
@@ -104,6 +108,7 @@ Hạn mức do các hãng quy định và có thể thay đổi.
 | Nguồn chưa có key / key lỗi → tự chuyển sang Pollinations | ✅ |
 | `omniroute chat` với `OMNIROUTE_API_KEY` | ✅ Qua xác thực |
 | Gọi qua địa chỉ mạng nội bộ (như điện thoại cùng Wi-Fi) | ✅ Có key: qua; không key: HTTP 401 |
-| Mở Cloudflare Tunnel (`--tu-xa`) | ⏳ Chưa chạy thử — môi trường thử không cho mở tunnel ra Internet |
+| Mở Cloudflare Tunnel (`--tu-xa`) | ✅ Trên máy Windows của người dùng |
 | Nhận câu trả lời thật | ⏳ Máy thử bị chặn mạng ra ngoài — cần chạy trên máy của bạn |
-| Chạy trên Windows / macOS | ⏳ Chưa thử trực tiếp (script dùng Node.js thuần, không cần bash) |
+| Chạy trên Windows 11 thật (máy người dùng) | ✅ Cài đặt, kết nối Gemini + Groq, mở Cloudflare Tunnel |
+| Nhập key che bằng `*`, `--doi-key` thay key | ✅ (terminal giả lập) |
